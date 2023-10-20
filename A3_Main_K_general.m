@@ -1,6 +1,6 @@
 clc
 clear all
-city='NYC357';
+city='SF';
 load(strcat(city,'/Graphs.mat'));
 Adj = adjacency(G_road);
 Binc = incidence(G_road); 
@@ -11,35 +11,41 @@ end
 OriginalDemand= full(DemandS);
 DemandS = full(DemandS);
 TotDems = sum(DemandS,'all');
-%mkdir(strcat(city,'/Results')) uncomment if folder does not exist yet
+%mkdir(strcat(city,'/Results'))
 %% Layer 2
-ppl = 2;
+ppl = 4;
 
 if ppl ==2
     load(strcat(city,'/MatL2.mat'))
+    sol2_LC(:,1) = sol2_LC(:,1)/2;
     size2 = size(sol2_LC,1);
     Sol2 = [sol2_LC(:,1:3),NaN(size2,2),sol2_LC(:,4:7),NaN(size2,4),sol2_LC(:,8:11),NaN(size2,4)];
     FullList = [Sol2];
 elseif ppl ==3
     load(strcat(city,'/MatL2.mat'))
+    sol2_LC(:,1) = sol2_LC(:,1)/2;
     size2 = size(sol2_LC,1);
     Sol2 = [sol2_LC(:,1:3),NaN(size2,2),sol2_LC(:,4:7),NaN(size2,4),sol2_LC(:,8:11),NaN(size2,4)];
     
     load(strcat(city,'/MatL3.mat'))
+    sol3_LC(:,1) = sol3_LC(:,1)/3;
     size3 = size(sol3_LC,1);
     Sol3 = [sol3_LC(:,1:4),NaN(size3,1),sol3_LC(:,5:10),NaN(size3,2),sol3_LC(:,11:16),NaN(size3,2)];
     
     FullList = [Sol2;Sol3];
 elseif ppl ==4
     load(strcat(city,'/MatL2.mat'))
+    sol2_LC(:,1) = sol2_LC(:,1)/2;
     size2 = size(sol2_LC,1);
     Sol2 = [sol2_LC(:,1:3),NaN(size2,2),sol2_LC(:,4:7),NaN(size2,4),sol2_LC(:,8:11),NaN(size2,4)];
     
     load(strcat(city,'/MatL3.mat'))
+    sol3_LC(:,1) = sol3_LC(:,1)/3;
     size3 = size(sol3_LC,1);
     Sol3 = [sol3_LC(:,1:4),NaN(size3,1),sol3_LC(:,5:10),NaN(size3,2),sol3_LC(:,11:16),NaN(size3,2)];
 
     load(strcat(city,'/MatL4.mat'))
+    sol4_LC(:,1) = sol4_LC(:,1)/4;
     FullList = [Sol2;Sol3;sol4_LC];
 end
 
@@ -59,9 +65,9 @@ end
 FullList(FullList(:,1) >= -0.01,:) = [];
 %%
 CountGamma = [];
-for WaitingTime = [2] %in min 2 5 10 15
+for WaitingTime = [2 5 10 15] %in min 2 5 10 15
     for Delay = [10] % in min
-        for mult= [0.125] %0.0078 0.0156 0.0312 0.0625 0.125 0.25 0.5 1 2
+        for mult= [0.0078 0.0156 0.0312 0.0625 0.125 0.25 0.5 1 2] %
             gamma = 0;
             TotGamma2 = 0;
             TotGamma3 = 0;
