@@ -468,66 +468,65 @@ def Generate_Full_List(ppl):
 
     return FullList
 
+def compute_results(ppl, FullList, Delay, WaitingTime):
+    for mult in MULTIPLIER:
+        TotGamma2 = 0
+        TotGamma3 = 0
+        TotGamma4 = 0
+        Cumul_delay2 = 0
+        Cumul_delay3 = 0
+        Cumul_delay4 = 0
+        DemandS =  mult* OriginalDemand
+        Demands_rp = np.zeros([N_nodes,N_nodes])
+
+        for iii in range(FullList.shape[0]):
+            # Seperate function to remove clutter
+            Cumul_delay2, TotGamma2, Cumul_delay3, TotGamma3,Cumul_delay4, TotGamma4, DemandS, Demands_rp = calculate_gamma(FullList,DemandS, Delay, N_nodes, WaitingTime, Cumul_delay2, TotGamma2, Cumul_delay3, TotGamma3, Cumul_delay4, TotGamma4, iii, Demands_rp)
+        
+        Demands_rp = Demands_rp - np.diag(np.diag(Demands_rp))
+
+        #calculate solutions
+        solBase =LTIFM_reb(mult*OriginalDemand,CITY_FOLDER)
+        solNP = LTIFM_reb(DemandS,CITY_FOLDER)
+        solRP = LTIFM_reb(Demands_rp,CITY_FOLDER)
+        #reset diagonals (these are modified in LTIFM_reb)
+        DemandS = DemandS - np.diag(np.diag(DemandS))
+        Demands_rp = Demands_rp - np.diag(np.diag(Demands_rp))
+        TrackDems_temp = [np.sum(mult*OriginalDemand), np.sum(DemandS),np.sum(Demands_rp)]
+        TotGamma = [TotGamma2, TotGamma3,TotGamma4]
+        Cumul_delay = [Cumul_delay2, Cumul_delay3, Cumul_delay4]
+        #Prepare for storing
+        solutions_data = {
+            "x": np.stack([solBase["x"], solNP["x"], solRP["x"]], axis=0),           # Shape: (3, N_edges * N_nodes)
+            "xr": np.stack([solBase["xr"], solNP["xr"], solRP["xr"]], axis=0),       # Shape: (3, N_edges)
+            "IndividualTimes": np.stack([solBase["IndividualTimes"], solNP["IndividualTimes"], solRP["IndividualTimes"]], axis=0),  # Shape: (3, N_nodes)
+            "obj": np.array([solBase["obj"], solNP["obj"], solRP["obj"]]),           # Shape: (3,)
+            "Dem": np.stack([solBase["Dem"], solNP["Dem"], solRP["Dem"]], axis=0)  # Shape: (3, 24, 24)
+            }
+        # Additional tracking variables
+        additional_data = {
+            "TrackDems_temp": TrackDems_temp,
+            "Cumul_delay": Cumul_delay,
+            "TotGamma": TotGamma
+        }
+        # Save to an HDF5 file
+        with h5py.File(f"{CITY_FOLDER}/Results/Ppl_{ppl}Delay{Delay}WTime{WaitingTime}Dem{mult}.h5", "w") as h5file:
+            # Save solution arrays in a flat structure
+            for key, value in solutions_data.items():
+                h5file.create_dataset(f"solutions/{key}", data=value)
+            
+            # Save additional tracking variables
+            for key, value in additional_data.items():
+                h5file.create_dataset(f"additional/{key}", data=value)
+
 def A3_Main_K_general(ppl):
     #create list with the minimum path costs up to ppl depth
-    FullList = Generate_Full_List(ppl)
-
-    ## we can also load the list in from the matlab output to compare results
-    # FullList_dic = io.loadmat(CITY_FOLDER+'/Results/FullList_to_pyth.mat', squeeze_me=True)
-    # FullList = FullList_dic['FullList_pyth']
-    
-    # Delay = 10    # for 1 delay
-    for WaitingTime in WAITINGTIMES:
-        for Delay in DELAYS:
-            for mult in MULTIPLIER:
-                TotGamma2 = 0
-                TotGamma3 = 0
-                TotGamma4 = 0
-                Cumul_delay2 = 0
-                Cumul_delay3 = 0
-                Cumul_delay4 = 0
-                DemandS =  mult* OriginalDemand
-                Demands_rp = np.zeros([N_nodes,N_nodes])
-
-                for iii in range(FullList.shape[0]):
-                    # Seperate function to remove clutter
-                    Cumul_delay2, TotGamma2, Cumul_delay3, TotGamma3,Cumul_delay4, TotGamma4, DemandS, Demands_rp = calculate_gamma(FullList,DemandS, Delay, N_nodes, WaitingTime, Cumul_delay2, TotGamma2, Cumul_delay3, TotGamma3, Cumul_delay4, TotGamma4, iii, Demands_rp)
-                
-                Demands_rp = Demands_rp - np.diag(np.diag(Demands_rp))
-
-                #calculate solutions
-                solBase =LTIFM_reb(mult*OriginalDemand,CITY_FOLDER)
-                solNP = LTIFM_reb(DemandS,CITY_FOLDER)
-                solRP = LTIFM_reb(Demands_rp,CITY_FOLDER)
-                #reset diagonals (these are modified in LTIFM_reb)
-                DemandS = DemandS - np.diag(np.diag(DemandS))
-                Demands_rp = Demands_rp - np.diag(np.diag(Demands_rp))
-                TrackDems_temp = [np.sum(mult*OriginalDemand), np.sum(DemandS),np.sum(Demands_rp)]
-                TotGamma = [TotGamma2, TotGamma3,TotGamma4]
-                Cumul_delay = [Cumul_delay2, Cumul_delay3, Cumul_delay4]
-                #Prepare for storing
-                solutions_data = {
-                    "x": np.stack([solBase["x"], solNP["x"], solRP["x"]], axis=0),           # Shape: (3, N_edges * N_nodes)
-                    "xr": np.stack([solBase["xr"], solNP["xr"], solRP["xr"]], axis=0),       # Shape: (3, N_edges)
-                    "IndividualTimes": np.stack([solBase["IndividualTimes"], solNP["IndividualTimes"], solRP["IndividualTimes"]], axis=0),  # Shape: (3, N_nodes)
-                    "obj": np.array([solBase["obj"], solNP["obj"], solRP["obj"]]),           # Shape: (3,)
-                    "Dem": np.stack([solBase["Dem"], solNP["Dem"], solRP["Dem"]], axis=0)  # Shape: (3, 24, 24)
-                    }
-                # Additional tracking variables
-                additional_data = {
-                    "TrackDems_temp": TrackDems_temp,
-                    "Cumul_delay": Cumul_delay,
-                    "TotGamma": TotGamma
-                }
-                # Save to an HDF5 file
-                with h5py.File(f"{CITY_FOLDER}/Results/Ppl_{ppl}Delay{Delay}WTime{WaitingTime}Dem{mult}.h5", "w") as h5file:
-                    # Save solution arrays in a flat structure
-                    for key, value in solutions_data.items():
-                        h5file.create_dataset(f"solutions/{key}", data=value)
-                    
-                    # Save additional tracking variables
-                    for key, value in additional_data.items():
-                        h5file.create_dataset(f"additional/{key}", data=value)
+    FullList = Generate_Full_List(ppl)    
+    for WaitingTime in tqdm(WAITINGTIMES, desc="Iterating through Waitingtimes", ncols=100):
+        Parallel(n_jobs=4)(
+            delayed(compute_results)(ppl, FullList, Delay, WaitingTime)
+            for Delay in tqdm(DELAYS, desc="Iterating through Delays")
+        )
 
 def load_h5_grouping(ppl, Delay, WaitingTime, multiplicator):
     with h5py.File(f"{CITY_FOLDER}/Results/Ppl_{ppl}Delay{Delay}WTime{WaitingTime}Dem{multiplicator}.h5", "r") as h5file:
@@ -634,12 +633,12 @@ def plot_groups():
                 # Normalize TotG row-wise and scale it by (1 - PercNRP)
                 TotG_normalized = TotG / np.sum(TotG, axis=1, keepdims=True)  # Normalize rows of TotG
                 scaled_TotG = TotG_normalized * (1 - PercNRP[:, np.newaxis])  # Scale by (1 - PercNRP)
-                if Ppl ==4 and Delay == 10 and WaitingTime == 2:
-                    print(PercNRP)
-                    print(TotG_normalized)
-                    print(scaled_TotG)
-                    print(TotG)
-                    gsgdf
+                # if Ppl ==4 and Delay == 10 and WaitingTime == 2:
+                #     print(PercNRP)
+                #     print(TotG_normalized)
+                #     print(scaled_TotG)
+                #     print(TotG)
+                #     gsgdf
                 # Combine PercNRP and the scaled TotG into a new array
                 total_PercNRP = np.hstack([PercNRP[:, np.newaxis], scaled_TotG])
 
@@ -666,15 +665,15 @@ def main():
     solPart = A1_SP()
 
     ### create solutions for different amount of linear combinations
-    # sol2_LC = A2_LinearComb2(solPart)
-    # sol3_LC = A2_LinearComb3(solPart)
-    # sol4_LC = A2_LinearComb4(solPart)
+    sol2_LC = A2_LinearComb2(solPart)
+    sol3_LC = A2_LinearComb3(solPart)
+    sol4_LC = A2_LinearComb4(solPart)
 
-    ### Solve for up to ppl combinations
-    # A3_Main_K_general(ppl=2)
-    # print("Solved A3 for ppl = 2")
-    # A3_Main_K_general(ppl=3)
-    # print("Solved A3 for ppl = 3")
+    ## Solve for up to ppl combinations
+    A3_Main_K_general(ppl=2)
+    print("Solved A3 for ppl = 2")
+    A3_Main_K_general(ppl=3)
+    print("Solved A3 for ppl = 3")
     A3_Main_K_general(ppl=4)
     print("Solved A3 for ppl = 4")
 
