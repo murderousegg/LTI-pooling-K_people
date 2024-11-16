@@ -28,7 +28,7 @@ def calculate_gamma(FullList, DemandS, Delay, N_nodes, WaitingTime, Cumul_delay2
         # print(Demands_rp)
         DemandS[ii1][jj1] -= multip*gamma
         DemandS[ii2][jj2] -= multip*gamma
-        Cumul_delay2 += multip * gamma * (FullList[iii, 1] + FullList[iii, 2])
+        Cumul_delay2 += multip*gamma*(FullList[iii, 1] + FullList[iii, 2])
         # print(Cumul_delay2)
         TotGamma2 += multip*gamma
         # print(TotGamma2)

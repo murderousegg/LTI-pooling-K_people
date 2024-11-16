@@ -633,12 +633,6 @@ def plot_groups():
                 # Normalize TotG row-wise and scale it by (1 - PercNRP)
                 TotG_normalized = TotG / np.sum(TotG, axis=1, keepdims=True)  # Normalize rows of TotG
                 scaled_TotG = TotG_normalized * (1 - PercNRP[:, np.newaxis])  # Scale by (1 - PercNRP)
-                # if Ppl ==4 and Delay == 10 and WaitingTime == 2:
-                #     print(PercNRP)
-                #     print(TotG_normalized)
-                #     print(scaled_TotG)
-                #     print(TotG)
-                #     gsgdf
                 # Combine PercNRP and the scaled TotG into a new array
                 total_PercNRP = np.hstack([PercNRP[:, np.newaxis], scaled_TotG])
 
